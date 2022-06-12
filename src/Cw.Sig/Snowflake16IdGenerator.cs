@@ -38,7 +38,7 @@
             WorkerId = WorkerIdHelper.GetWorkerId(maxWorkerId: MaxWorkerId, min: min, suffix: suffix);
             _sequence = 0;
 
-            // send heart beat, let other understand that this workerid is in used !!
+            // send heart beat, let other understand that this workerid is in use !!
             _timer = new Timer((x) => WorkerIdHelper.SendHeartBeat((long)x), WorkerId, TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(8));
         }
 

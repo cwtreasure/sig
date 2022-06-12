@@ -7,6 +7,13 @@
         private static readonly string INCR_KEY = $"snid:{AppDomain.CurrentDomain.FriendlyName}";
         private static readonly string USED_KEY = $"snid:{AppDomain.CurrentDomain.FriendlyName}:used";
 
+        /// <summary>
+        /// GetWorkerId, generate a new workerid from redis
+        /// </summary>
+        /// <param name="maxWorkerId">The max value of worker id</param>
+        /// <param name="min">The life time of worker id</param>
+        /// <param name="suffix">The redis key's suffix</param>
+        /// <returns></returns>
         public static long GetWorkerId(long maxWorkerId, int min = 10, string suffix = "suf")
         {
             var now = DateTimeOffset.UtcNow;
@@ -19,17 +26,19 @@
             var obj = RedisHelper.Eval(LuaScript,
                 $"{INCR_KEY}:{suffix}",
                 maxWorkerId,
-                $"{USED_KEY}:suf",
+                $"{USED_KEY}:{suffix}",
                 now.ToUnixTimeSeconds(),
                 now.AddMinutes(-min).ToUnixTimeSeconds());
 
             return obj == null
+                // maybe throw exception will be better?
+                // random value may cause duplicate id
                 ? new Random().Next(0, (int)maxWorkerId)
                 : (long)obj;
         }
 
         /// <summary>
-        /// SendHeartBeat for this workerId, means that this workerId is in used.
+        /// SendHeartBeat for this workerId, means that this workerId is in use.
         /// </summary>
         /// <param name="workerId"></param>
         /// <param name="suffix"></param>
@@ -49,6 +58,16 @@
             }
         }
 
+        /// <summary>
+        /// Two things we need to know: Id and Is this Id in use
+        /// 
+        /// 1. INCR a key, will get a wid
+        /// 2. If this wid less than MaxWorkerId, add this wid to in use set with current timestamp
+        /// and return this wid
+        /// 3. If this wid greate than MaxWorkerId, try to find out some expire(no in use) wid with
+        /// a timestamp before life time, if found, update this wid with current timestamp and return
+        /// this wid, otherwise, nothing will be returned.
+        /// </summary>
         private const string LuaScript = @"
 local iv = redis.call('INCR', KEYS[1])
 
