@@ -38,7 +38,7 @@
             _sequence = 0L;
 
             // send heart beat, let other understand that this workerid is in use !!
-            _timer = new Timer((x) => WorkerIdHelper.SendHeartBeat((long)x), WorkerId, TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(8));
+            _timer = new Timer((x) => WorkerIdHelper.SendHeartBeat((long)x, suffix), WorkerId, TimeSpan.FromMinutes(2), TimeSpan.FromMinutes(5));
         }
 
         private readonly object _lock = new object();
